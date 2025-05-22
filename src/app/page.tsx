@@ -23,6 +23,7 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
+    // Clear previous results or errors when username changes after a search has been made
     if (hasSearched) {
       setFollowings([]);
       setError(null);
@@ -36,7 +37,7 @@ export default function Home() {
 
     if (!trimmedUsername) {
       setError('Please enter an X username.');
-      setHasSearched(false);
+      setHasSearched(false); // Reset search state if username is cleared
       return;
     }
 
@@ -54,24 +55,27 @@ export default function Home() {
         const rawErrorMessage = data.error || `An error occurred: ${response.statusText}`;
         let detailedMessage = rawErrorMessage;
         
+        // Enhance error message based on status and details
         if (data.details) {
             if (typeof data.details.error === 'string') {
                 detailedMessage = data.details.error;
             } else if (typeof data.details.message === 'string') {
                 detailedMessage = data.details.message;
-            } else if (typeof data.details.detail === 'string' && data.details.title === "Not Found Error") {
-                 detailedMessage = `User "${trimmedUsername}" not found or their followings are private. (${data.details.detail})`;
+            } else if (typeof data.details.detail === 'string' && (data.details.title === "Not Found Error" || response.status === 404)) {
+                 detailedMessage = `User "${trimmedUsername}" not found. Please check the username. (${data.details.detail || response.statusText})`;
             } else if (data.details.title === "Forbidden" || response.status === 401 || response.status === 403) {
                 detailedMessage = "Access to the API is forbidden. This might be due to an invalid API key or permission issues on the server.";
             }
         }
         
-        if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found") || (data.details?.detail || "").includes("Could not find user"))) {
-             setError(`User "${trimmedUsername}" not found or their followings are private.`);
+        if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found") || detailedMessage.startsWith(`User "${trimmedUsername}" not found`))) {
+             setError(`User "@${trimmedUsername}" not found or their profile is private. Please check the username and try again.`);
         } else if (detailedMessage === "Failed to fetch data from Twitter") {
             let additionalHint = "";
-            if (response.status === 400) { // Check if our API (mirroring external) returned 400
-                additionalHint = " This can also occur if the external API requires a numeric user ID but a username string was provided.";
+             // The backend now tries to convert username to ID, so 400 from /friends/list is less likely due to username format.
+             // However, 400 from /user/{username} could mean invalid username format for lookup.
+            if (response.status === 400 && (data.details?.message?.toLowerCase().includes("invalid user") || data.details?.error?.toLowerCase().includes("invalid user"))) {
+                additionalHint = " The username format might be invalid for lookup.";
             }
             setError(`Could not retrieve followings for @${trimmedUsername}. This might be because the user doesn't exist, their profile is private, the username was entered incorrectly, or there's a temporary issue with the data service.${additionalHint} Please check the username and try again later.`);
         } else {
@@ -83,11 +87,12 @@ export default function Home() {
       if (data.followings && Array.isArray(data.followings)) {
         setFollowings(data.followings.slice(0, 5));
       } else {
-        setError('Received an unexpected data format. The API might have changed.');
+        // This case should ideally be handled by the backend returning 502 if structure is wrong.
+        setError('Received an unexpected data format after a successful response. The API might have changed.');
         setFollowings([]);
       }
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error('Fetch error on client:', err);
       setError('An unexpected error occurred. Please check your network connection and try again.');
     } finally {
       setIsLoading(false);
@@ -110,7 +115,7 @@ export default function Home() {
           <CardHeader>
             <CardTitle className="text-2xl">Find Followings</CardTitle>
             <CardDescription>
-              Type an X (formerly Twitter) username below. The API may expect a numeric user ID for some accounts.
+              Type an X (formerly Twitter) username below.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -119,11 +124,11 @@ export default function Home() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="e.g., elonmusk or a numeric user ID"
+                  placeholder="e.g., elonmusk"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.startsWith('@') ? e.target.value.substring(1) : e.target.value)}
                   disabled={isLoading}
-                  aria-label="X Username or Numeric User ID"
+                  aria-label="X Username"
                   className="text-base py-3 px-4"
                 />
               </div>
@@ -198,4 +203,3 @@ export default function Home() {
     </main>
   );
 }
-
