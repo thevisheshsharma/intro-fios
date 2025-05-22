@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FormEvent, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Users, AlertCircle, Eye } from 'lucide-react'; // Added Eye icon
+import { Loader2, Users, AlertCircle, Eye } from 'lucide-react';
 
 interface ApiResponse {
   followings?: string[];
@@ -21,13 +22,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Effect to clear results when username input changes after a search has been made
   useEffect(() => {
     if (hasSearched) {
       setFollowings([]);
       setError(null);
-      // Optionally reset hasSearched if you want each input change to clear previous search state entirely
-      // setHasSearched(false); 
     }
   }, [username]);
 
@@ -38,7 +36,7 @@ export default function Home() {
 
     if (!trimmedUsername) {
       setError('Please enter an X username.');
-      setHasSearched(false); // Not a valid search
+      setHasSearched(false);
       return;
     }
 
@@ -53,8 +51,8 @@ export default function Home() {
       const data: ApiResponse = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.error || `An error occurred: ${response.statusText}`;
-        let detailedMessage = errorMessage;
+        const rawErrorMessage = data.error || `An error occurred: ${response.statusText}`;
+        let detailedMessage = rawErrorMessage;
         
         if (data.details) {
             if (typeof data.details.error === 'string') {
@@ -63,14 +61,15 @@ export default function Home() {
                 detailedMessage = data.details.message;
             } else if (typeof data.details.detail === 'string' && data.details.title === "Not Found Error") {
                  detailedMessage = `User "${trimmedUsername}" not found or their followings are private. (${data.details.detail})`;
-            } else if (data.details.title === "Forbidden") {
+            } else if (data.details.title === "Forbidden" || response.status === 401 || response.status === 403) {
                 detailedMessage = "Access to the API is forbidden. This might be due to an invalid API key or permission issues on the server.";
             }
         }
         
-        // Specific handling for user not found or private profile
-        if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found"))) {
+        if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found") || (data.details?.detail || "").includes("Could not find user"))) {
              setError(`User "${trimmedUsername}" not found or their followings are private.`);
+        } else if (detailedMessage === "Failed to fetch data from Twitter") {
+            setError(`Could not retrieve followings for @${trimmedUsername}. This might be because the user doesn't exist, their profile is private, the username was entered incorrectly, or there's a temporary issue with the data service. Please check the username and try again later.`);
         } else {
              setError(detailedMessage || 'Failed to fetch followings. Please try again.');
         }
@@ -79,9 +78,7 @@ export default function Home() {
 
       if (data.followings && Array.isArray(data.followings)) {
         setFollowings(data.followings.slice(0, 5));
-        // No error if followings array is empty, UI will handle "No results"
       } else {
-        // Successful response but unexpected data structure
         setError('Received an unexpected data format. The API might have changed.');
         setFollowings([]);
       }
@@ -197,3 +194,4 @@ export default function Home() {
     </main>
   );
 }
+
