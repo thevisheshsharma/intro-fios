@@ -3,10 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const username = searchParams.get('username');
+  const username = searchParams.get('username'); // This will be used as user_id as per current app flow
 
   if (!username) {
-    return NextResponse.json({ error: 'Username is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Username (used as user_id) is required' }, { status: 400 });
   }
 
   const apiKey = process.env.SOCIALDATA_API_KEY;
@@ -15,13 +15,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Server configuration error: API key missing.', details: { title: "Forbidden", message: "The server is not configured correctly to access the external API."} }, { status: 500 });
   }
 
-  const externalApiUrl = `https://api.socialdata.tools/twitter/user/followings/${username}`;
+  // Using username as user_id based on current app input. 
+  // The API documentation specifies user_id as numeric. If it strictly requires numbers, this may fail for non-numeric usernames.
+  const externalApiUrl = `https://api.socialdata.tools/twitter/friends/list?user_id=${username}`;
 
   try {
     const response = await fetch(externalApiUrl, {
       method: 'GET',
       headers: {
-        'x-api-key': apiKey,
+        'Authorization': `Bearer ${apiKey}`, // Changed authentication method
         'Accept': 'application/json',
       },
       cache: 'no-store',
@@ -60,17 +62,21 @@ export async function GET(request: NextRequest) {
     }
     
     // Response is OK (2xx) and JSON has been parsed
-    // Based on socialdata.tools documentation for /twitter/user/followings/{username}
-    // The response is: { data: { users: [ { username: "..." }, ... ] } }
-    if (data && data.data && Array.isArray(data.data.users)) {
-        const usernames = data.data.users.map((user: any) => user.username).filter(Boolean); // Filter out any null/undefined usernames
+    // New API doc says: "returns an array of user profiles". Assuming it's in data.data or similar
+    // Assuming the response structure is like: { data: [ { username: "..." }, ... ] }
+    if (data && Array.isArray(data.data)) {
+        const usernames = data.data.map((user: any) => user.username).filter(Boolean); // Filter out any null/undefined usernames
         return NextResponse.json({ followings: usernames });
-    } else {
+    } else if (Array.isArray(data)) { // Fallback if the root is the array of users
+        const usernames = data.map((user: any) => user.username).filter(Boolean);
+        return NextResponse.json({ followings: usernames });
+    }
+    else {
         // Successful (2xx) response from external API, but unexpected JSON structure.
         console.warn('Unexpected data structure from external API after successful fetch:', data);
         return NextResponse.json({ 
             error: 'Bad Gateway: Upstream API response has unexpected structure.', 
-            details: { message: "The list of followings could not be extracted due to an unexpected data format from the external service.", receivedData: data }
+            details: { message: "The list of followings could not be extracted due to an unexpected data format from the external service. Expected an array of users, possibly under a 'data' key.", receivedData: data }
         }, { status: 502 }); // 502 Bad Gateway
     }
 
