@@ -11,7 +11,7 @@ import { Loader2, Users, AlertCircle, Eye } from 'lucide-react';
 interface ApiResponse {
   followings?: string[];
   error?: string;
-  details?: any;
+  details?: { message?: string; [key: string]: any }; // More specific type for details
 }
 
 export default function Home() {
@@ -23,13 +23,11 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    // Clear previous results or errors when username changes after a search has been made
     if (hasSearched) {
       setFollowings([]);
       setError(null);
     }
-  }, [username]);
-
+  }, [username, hasSearched]); // Added hasSearched to dependency array for clarity
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,13 +35,13 @@ export default function Home() {
 
     if (!trimmedUsername) {
       setError('Please enter an X username.');
-      setHasSearched(false); // Reset search state if username is cleared
+      setHasSearched(false);
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setFollowings([]);
+    setFollowings([]); // Clear previous results
     setSubmittedUsername(trimmedUsername);
     setHasSearched(true);
 
@@ -52,47 +50,39 @@ export default function Home() {
       const data: ApiResponse = await response.json();
 
       if (!response.ok) {
-        const rawErrorMessage = data.error || `An error occurred: ${response.statusText}`;
-        let detailedMessage = rawErrorMessage;
+        let displayError = data.error || `An error occurred: ${response.statusText}`;
         
-        // Enhance error message based on status and details
-        if (data.details) {
-            if (typeof data.details.error === 'string') {
-                detailedMessage = data.details.error;
-            } else if (typeof data.details.message === 'string') {
-                detailedMessage = data.details.message;
-            } else if (typeof data.details.detail === 'string' && (data.details.title === "Not Found Error" || response.status === 404)) {
-                 detailedMessage = `User "${trimmedUsername}" not found. Please check the username. (${data.details.detail || response.statusText})`;
-            } else if (data.details.title === "Forbidden" || response.status === 401 || response.status === 403) {
-                detailedMessage = "Access to the API is forbidden. This might be due to an invalid API key or permission issues on the server.";
-            }
+        // If the backend provided a more specific message in details.message, use it.
+        if (data.details?.message) {
+          displayError = data.details.message;
         }
         
-        if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found") || detailedMessage.startsWith(`User "${trimmedUsername}" not found`))) {
-             setError(`User "@${trimmedUsername}" not found or their profile is private. Please check the username and try again.`);
-        } else if (detailedMessage === "Failed to fetch data from Twitter") {
-            let additionalHint = "";
-             // The backend now tries to convert username to ID, so 400 from /friends/list is less likely due to username format.
-             // However, 400 from /user/{username} could mean invalid username format for lookup.
-            if (response.status === 400 && (data.details?.message?.toLowerCase().includes("invalid user") || data.details?.error?.toLowerCase().includes("invalid user"))) {
-                additionalHint = " The username format might be invalid for lookup.";
-            }
-            setError(`Could not retrieve followings for @${trimmedUsername}. This might be because the user doesn't exist, their profile is private, the username was entered incorrectly, or there's a temporary issue with the data service.${additionalHint} Please check the username and try again later.`);
-        } else {
-             setError(detailedMessage || 'Failed to fetch followings. Please try again.');
+        // Specific handling for user not found or API key issues based on status codes
+        if (response.status === 404) {
+          displayError = `User "@${trimmedUsername}" not found. Please check the username.`;
+        } else if (response.status === 401 || response.status === 403) {
+          displayError = "Access to the data service is unauthorized. This might be an API key issue on the server.";
+        } else if (response.status === 500 && data.error === "API Key Not Configured") {
+          displayError = "The server is not configured correctly to access the data service (API key missing).";
+        } else if (data.error && data.error.toLowerCase().includes("failed to fetch data") || displayError.toLowerCase().includes("failed to fetch")) {
+           displayError = `Could not retrieve followings for @${trimmedUsername}. The user might not exist, their profile could be private, or there might be a temporary issue with the data service. Please verify the username and try again.`;
         }
+        
+        setError(displayError);
         return;
       }
 
       if (data.followings && Array.isArray(data.followings)) {
-        setFollowings(data.followings.slice(0, 5));
+        setFollowings(data.followings.slice(0, 5)); // Continue to show up to 5
       } else {
-        // This case should ideally be handled by the backend returning 502 if structure is wrong.
-        setError('Received an unexpected data format after a successful response. The API might have changed.');
+        // This implies a successful response (2xx) but unexpected data structure,
+        // which should ideally be caught by the backend as a 502.
+        // If it reaches here, it's an unexpected state.
+        setError('Received an unexpected data format from the server.');
         setFollowings([]);
       }
     } catch (err) {
-      console.error('Fetch error on client:', err);
+      console.error('Client-side fetch error:', err);
       setError('An unexpected error occurred. Please check your network connection and try again.');
     } finally {
       setIsLoading(false);
@@ -126,13 +116,13 @@ export default function Home() {
                   type="text"
                   placeholder="e.g., elonmusk"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.startsWith('@') ? e.target.value.substring(1) : e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))} // Remove leading @
                   disabled={isLoading}
                   aria-label="X Username"
                   className="text-base py-3 px-4"
                 />
               </div>
-              <Button type="submit" className="w-full text-base py-3" disabled={isLoading} variant="default">
+              <Button type="submit" className="w-full text-base py-3" disabled={isLoading || !username.trim()} variant="default">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -194,7 +184,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                No public followings found for @{submittedUsername}. The user might not exist, their followings could be private, or they aren't following anyone publicly.
+                No public followings found for @{submittedUsername}, or their followings are private/empty.
               </p>
             </CardContent>
           </Card>
