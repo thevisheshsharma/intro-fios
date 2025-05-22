@@ -69,7 +69,11 @@ export default function Home() {
         if (response.status === 404 && (detailedMessage.includes("Could not find user") || detailedMessage.includes("User not found") || (data.details?.detail || "").includes("Could not find user"))) {
              setError(`User "${trimmedUsername}" not found or their followings are private.`);
         } else if (detailedMessage === "Failed to fetch data from Twitter") {
-            setError(`Could not retrieve followings for @${trimmedUsername}. This might be because the user doesn't exist, their profile is private, the username was entered incorrectly, or there's a temporary issue with the data service. Please check the username and try again later.`);
+            let additionalHint = "";
+            if (response.status === 400) { // Check if our API (mirroring external) returned 400
+                additionalHint = " This can also occur if the external API requires a numeric user ID but a username string was provided.";
+            }
+            setError(`Could not retrieve followings for @${trimmedUsername}. This might be because the user doesn't exist, their profile is private, the username was entered incorrectly, or there's a temporary issue with the data service.${additionalHint} Please check the username and try again later.`);
         } else {
              setError(detailedMessage || 'Failed to fetch followings. Please try again.');
         }
@@ -106,7 +110,7 @@ export default function Home() {
           <CardHeader>
             <CardTitle className="text-2xl">Find Followings</CardTitle>
             <CardDescription>
-              Type an X (formerly Twitter) username below.
+              Type an X (formerly Twitter) username below. The API may expect a numeric user ID for some accounts.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -115,11 +119,11 @@ export default function Home() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="e.g., elonmusk or @elonmusk"
+                  placeholder="e.g., elonmusk or a numeric user ID"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.startsWith('@') ? e.target.value.substring(1) : e.target.value)}
                   disabled={isLoading}
-                  aria-label="X Username"
+                  aria-label="X Username or Numeric User ID"
                   className="text-base py-3 px-4"
                 />
               </div>
