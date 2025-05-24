@@ -11,7 +11,7 @@
         "source": "**",
         "run": {
           "serviceId": "intro-back",
-          "region": "us-central1"
+          "region": "asia-east1"
         }
       }
     ]
