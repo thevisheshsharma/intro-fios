@@ -1,4 +1,18 @@
+
 {
+  "hosting": {
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "apphosting": "intro-back"
+      }
+    ]
+  },
   "apphosting": {
     "backendId": "intro-back",
     "rootDir": "/",
