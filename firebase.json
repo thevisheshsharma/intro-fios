@@ -9,7 +9,10 @@
     "rewrites": [
       {
         "source": "**",
-        "apphosting": "intro-back"
+        "run": {
+          "serviceId": "intro-back",
+          "region": "us-central1"
+        }
       }
     ]
   },
