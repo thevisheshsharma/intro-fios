@@ -10,10 +10,10 @@ runConfig:
 # Environment variables and secrets.
 env:
   - variable: SOCIALDATA_API_KEY
-    value: "3059|8Ag8UUpvu1N5APiSCLbowGDiWEySlKh4SyAWSXi46ddec2f4" # <<< IMPORTANT: Replace this with your real key
+    # vvv This now references a secret in Secret Manager vvv
+    secret: SOCIALDATA_API_KEY_SECRET # You can name this secret whatever you like in Secret Manager
     availability:
-     - BUILD
-     - RUNTIME
+     - RUNTIME # Secrets are typically only needed at RUNTIME
 
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
