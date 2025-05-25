@@ -11,7 +11,7 @@ runConfig:
 env:
   - variable: SOCIALDATA_API_KEY
     # vvv This now references a secret in Secret Manager vvv
-    secret: SOCIALDATA_API_KEY_SECRET # You can name this secret whatever you like in Secret Manager
+    secret: "3041|8y3iUSHVq5d6F9V9krxhlmXTqGQFMZK4pvGghAnVce20d1c9" # You can name this secret whatever you like in Secret Manager
     availability:
      - RUNTIME # Secrets are typically only needed at RUNTIME
 
