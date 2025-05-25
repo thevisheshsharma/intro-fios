@@ -10,7 +10,7 @@ runConfig:
 # Environment variables and secrets.
 env:
   - variable: SOCIALDATA_API_KEY
-    value: "3041|8y3iUSHVq5d6F9V9krxhlmXTqGQFMZK4pvGghAnVce20d1c9"
+    value: "YOUR_ACTUAL_SOCIALDATA_API_KEY" # <<< IMPORTANT: Replace this with your real key
     availability:
      - BUILD
      - RUNTIME
