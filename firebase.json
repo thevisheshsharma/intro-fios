@@ -10,7 +10,7 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "introfios",
+          "serviceId": "intro-fios",
           "region": "us-central1"
         }
       }
