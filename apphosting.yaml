@@ -6,23 +6,16 @@ runConfig:
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512
+
 # Environment variables and secrets.
 env:
-  # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   - variable: SOCIALDATA_API_KEY
-    value: "3041|8y3iUSHVq5d6F9V9krxhlmXTqGQFMZK4pvGghAnVce20d1c9" # <-- IMPORTANT: Replace this with your real API key
+    value: "3041|8y3iUSHVq5d6F9V9krxhlmXTqGQFMZK4pvGghAnVce20d1c9"
     availability:
-      - RUNTIME # This key is needed by your API route at runtime
+     - BUILD
+     - RUNTIME
 
-  # Example of another variable:
-  # - variable: MESSAGE
-  #   value: Hello world!
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
-
-  # Example of using Secret Manager (more secure for API keys if you have it set up):
+  # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET_FROM_SECRET_MANAGER
-  #   secret: nameOfYourSecretInSecretManager
+  # - variable: MY_SECRET
+  #   secret: mySecretRef
