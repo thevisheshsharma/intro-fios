@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Users, AlertCircle, Eye } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface ApiResponse {
   followings?: string[];
   error?: string;
-  details?: { message?: string; [key: string]: any }; // More specific type for details
+  details?: { message?: string; [key: string]: any };
 }
 
 export default function Home() {
@@ -21,13 +22,14 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (hasSearched) {
       setFollowings([]);
       setError(null);
     }
-  }, [username, hasSearched]); // Added hasSearched to dependency array for clarity
+  }, [username, hasSearched]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,12 +38,17 @@ export default function Home() {
     if (!trimmedUsername) {
       setError('Please enter an X username.');
       setHasSearched(false);
+      toast({
+        title: "Input Required",
+        description: "Please enter an X username.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setFollowings([]); // Clear previous results
+    setFollowings([]);
     setSubmittedUsername(trimmedUsername);
     setHasSearched(true);
 
@@ -52,38 +59,57 @@ export default function Home() {
       if (!response.ok) {
         let displayError = data.error || `An error occurred: ${response.statusText}`;
         
-        // If the backend provided a more specific message in details.message, use it.
         if (data.details?.message) {
           displayError = data.details.message;
         }
         
-        // Specific handling for user not found or API key issues based on status codes
         if (response.status === 404) {
           displayError = `User "@${trimmedUsername}" not found. Please check the username.`;
         } else if (response.status === 401 || response.status === 403) {
           displayError = "Access to the data service is unauthorized. This might be an API key issue on the server.";
         } else if (response.status === 500 && data.error === "API Key Not Configured") {
           displayError = "The server is not configured correctly to access the data service (API key missing).";
-        } else if (data.error && data.error.toLowerCase().includes("failed to fetch data") || displayError.toLowerCase().includes("failed to fetch")) {
+        } else if (data.error && (data.error.toLowerCase().includes("failed to fetch data") || displayError.toLowerCase().includes("failed to fetch"))) {
            displayError = `Could not retrieve followings for @${trimmedUsername}. The user might not exist, their profile could be private, or there might be a temporary issue with the data service. Please verify the username and try again.`;
+        } else if (response.status === 400 && data.error && data.error.toLowerCase().includes("invalid request parameters")) {
+           displayError = `Could not process the request for @${trimmedUsername}. The username might be in an unexpected format. Please try again.`;
         }
         
         setError(displayError);
+        toast({
+          title: "Error",
+          description: displayError,
+          variant: "destructive",
+        });
         return;
       }
 
       if (data.followings && Array.isArray(data.followings)) {
-        setFollowings(data.followings.slice(0, 5)); // Continue to show up to 5
+        setFollowings(data.followings.slice(0, 5));
+        if (data.followings.length > 0) {
+            toast({
+                title: "Success!",
+                description: `Fetched followings for @${trimmedUsername}.`,
+            });
+        }
       } else {
-        // This implies a successful response (2xx) but unexpected data structure,
-        // which should ideally be caught by the backend as a 502.
-        // If it reaches here, it's an unexpected state.
         setError('Received an unexpected data format from the server.');
         setFollowings([]);
+         toast({
+          title: "Error",
+          description: 'Received an unexpected data format from the server.',
+          variant: "destructive",
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Client-side fetch error:', err);
-      setError('An unexpected error occurred. Please check your network connection and try again.');
+      const clientError = err.message || 'An unexpected error occurred. Please check your network connection and try again.';
+      setError(clientError);
+      toast({
+        title: "Fetch Error",
+        description: clientError,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +142,7 @@ export default function Home() {
                   type="text"
                   placeholder="e.g., elonmusk"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))} // Remove leading @
+                  onChange={(e) => setUsername(e.target.value.replace(/^@/, ''))}
                   disabled={isLoading}
                   aria-label="X Username"
                   className="text-base py-3 px-4"
