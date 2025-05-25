@@ -1,4 +1,4 @@
-# **App Name**: X Following Retriever
+# **App Name**: XX Following Retriever
 
 ## Core Features:
 
