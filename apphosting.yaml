@@ -6,13 +6,12 @@ runConfig:
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512
-
 # Environment variables and secrets.
 env:
   # Configure environment variables.
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   - variable: SOCIALDATA_API_KEY
-    value: YOUR_ACTUAL_SOCIALDATA_API_KEY # <-- IMPORTANT: Replace this with your real API key
+    value: "3041|8y3iUSHVq5d6F9V9krxhlmXTqGQFMZK4pvGghAnVce20d1c9" # <-- IMPORTANT: Replace this with your real API key
     availability:
       - RUNTIME # This key is needed by your API route at runtime
 
