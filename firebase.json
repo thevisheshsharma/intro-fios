@@ -10,14 +10,14 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "intro-back",
-          "region": "asia-east1"
+          "serviceId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
+          "region": "YOUR_NEW_APP_HOSTING_REGION"
         }
       }
     ]
   },
   "apphosting": {
-    "backendId": "intro-back",
+    "backendId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
     "rootDir": "/",
     "ignore": [
       "node_modules",
