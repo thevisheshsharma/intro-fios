@@ -10,15 +10,15 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
-          "region": "YOUR_NEW_APP_HOSTING_REGION"
+          "serviceId": "introfios",
+          "region": "us-central1"
         }
       }
     ]
   },
   "apphosting": [
     {
-      "backendId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
+      "backendId": "introfios",
       "rootDir": "/",
       "ignore": [
         "node_modules",
