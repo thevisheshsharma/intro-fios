@@ -16,15 +16,17 @@
       }
     ]
   },
-  "apphosting": {
-    "backendId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
-    "rootDir": "/",
-    "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "functions"
-    ]
-  }
+  "apphosting": [
+    {
+      "backendId": "YOUR_NEW_APP_HOSTING_BACKEND_ID",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ]
+    }
+  ]
 }

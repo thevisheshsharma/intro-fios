@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "intro-fios"
-  }
+    "default": "introfios"
+  },
+  "targets": {},
+  "etags": {}
 }
